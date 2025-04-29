@@ -5,9 +5,12 @@ export default function Home() {
       
       <div className="w-full aspect-video max-w-md sm:max-w-lg md:max-w-xl rounded overflow-hidden shadow-lg">
         <video
-          controls
-          className="w-full h-full object-cover"
-          poster="/video-poster.jpg" // optional placeholder image
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover rounded"
+          poster="/video-poster.jpg" // optional
         >
           <source src="/demo.mp4" type="video/mp4" />
           Din webbläsare stödjer inte video-taggen.
