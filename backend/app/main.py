@@ -6,34 +6,37 @@ from .models import Base, Product
 
 app = FastAPI()
 
-# CORS
+# Allow frontend in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["https://hobbyhosting.org"],  # ✅ Use your real domain
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Database
+# Database setup
 DATABASE_URL = "postgresql://postgres:password@db:5432/postgres"
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create tables
+# Auto-create tables at startup
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
 
+# Health check
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
+# Get all products
 @app.get("/products")
 def get_products():
     db = SessionLocal()
     products = db.query(Product).all()
     return [{"id": p.id, "name": p.name, "price": p.price} for p in products]
 
+# Seed test products
 @app.post("/seed")
 def seed_products():
     db = SessionLocal()
