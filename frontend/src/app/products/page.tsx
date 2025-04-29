@@ -11,7 +11,7 @@ type Product = {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function Products() {
-  const { data: products, error } = useSWR<Product[]>('http://127.0.0.1:8000/products', fetcher)
+  const { data: products, error } = useSWR<Product[]>('https://api.hobbyhosting.org/products', fetcher)
 
   if (error) return <div>Failed to load</div>
   if (!products) return <div>Loading...</div>
