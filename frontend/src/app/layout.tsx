@@ -6,8 +6,29 @@ import Link from 'next/link'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'My Store',
-  description: 'Next.js E-commerce starter',
+  title: 'My Store – Hobby Hosting',
+  description: 'Check out this slick storefront built with Next.js + FastAPI!',
+  openGraph: {
+    title: 'My Store – Hobby Hosting',
+    description: 'Simple, clean, fast. See the live product catalog.',
+    url: 'https://hobbyhosting.org',
+    siteName: 'Hobby Hosting',
+    images: [
+      {
+        url: 'https://hobbyhosting.org/og-image.jpg',
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'My Store – Hobby Hosting',
+    description: 'Simple, clean, fast. See the live product catalog.',
+    images: ['https://hobbyhosting.org/og-image.jpg'],
+  },
 }
 
 export default function RootLayout({
