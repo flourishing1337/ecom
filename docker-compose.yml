@@ -36,7 +36,6 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./frontend:/app
     env_file:
       - ./frontend/.env.local
     depends_on:
