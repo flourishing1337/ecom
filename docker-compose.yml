@@ -35,7 +35,6 @@ services:
     restart: unless-stopped
     ports:
       - "3000:3000"
-    volumes:
     env_file:
       - ./frontend/.env.local
     depends_on:
