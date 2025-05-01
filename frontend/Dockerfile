@@ -1,3 +1,5 @@
+# frontend/Dockerfile
+
 FROM node:20-alpine
 
 WORKDIR /app
@@ -7,6 +9,7 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3000
+RUN npm run build  # 👈 detta är avgörande!
 
+EXPOSE 3000
 CMD ["npm", "run", "start"]
