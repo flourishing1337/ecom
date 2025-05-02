@@ -48,12 +48,8 @@ def health():
 def get_products():
     db = SessionLocal()
     products = db.query(Product).all()
-    return [{
-        "id": p.id,
-        "name": p.name,
-        "price": p.price_cents / 100,
-        "image_url": p.image_url
-    } for p in products]
+    return [{"id": p.id, "name": p.name, "price": p.price_cents / 100} for p in products]
+
 
 @app.post("/create-checkout-session")
 def create_checkout_session(data: CheckoutRequest):
