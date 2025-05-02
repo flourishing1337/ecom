@@ -1,9 +1,8 @@
 from app.db.db import SessionLocal
 from app.models import Product
 
-
 def seed():
-    db: Session = SessionLocal()
+    db = SessionLocal()
 
     products = [
         Product(

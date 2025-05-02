@@ -1,3 +1,4 @@
-from .customer import Customer
-from .product import Product, Base
+from .base import Base
+from .product import Product
 from .order import Order, OrderItem
+from .customer import Customer

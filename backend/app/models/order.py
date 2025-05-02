@@ -1,15 +1,14 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import relationship
 from datetime import datetime
-
-Base = declarative_base()
+from app.models.base import Base
 
 class Order(Base):
     __tablename__ = "orders"
 
     id = Column(Integer, primary_key=True, index=True)
     stripe_session_id = Column(String, unique=True, nullable=False)
-    customer_id = Column(Integer, ForeignKey("customers.id"))
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
     total_amount = Column(Float)
     status = Column(String, default="pending")
     created_at = Column(DateTime, default=datetime.utcnow)

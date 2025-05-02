@@ -1,8 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from pydantic import BaseModel
 from dotenv import load_dotenv
 import stripe
 import os
@@ -10,15 +9,17 @@ import os
 from app.models import Base
 from app.db.db import get_db
 from app.routes import products as product_routes
-from app.stripe_routes import router as stripe_router
+from app.routes import orders as order_routes
+from app.routes import stripe_routes as stripe_router
 
 load_dotenv()
 
 app = FastAPI()
 
 # Include routers
-app.include_router(stripe_router)
 app.include_router(product_routes.router)
+app.include_router(order_routes.router)
+app.include_router(stripe_router.router)
 
 # CORS
 app.add_middleware(
