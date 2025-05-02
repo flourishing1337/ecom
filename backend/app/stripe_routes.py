@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import stripe
 import os
 
-from .db import get_db
+from app.db.db import get_db
 from .models import Order, OrderItem, Product
 
 router = APIRouter()
