@@ -1,36 +1,95 @@
-# backend/app/stripe_routes.py
-
-import os
-import stripe
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+import stripe
+import os
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+from .db import get_db
+from .models import Order, OrderItem, Product
 
 router = APIRouter()
 
-class CheckoutRequest(BaseModel):
-    product_name: str
-    price: int  # in cents
-    currency: str = "usd"
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
+
+
+# 📦 Skapa beställning och Stripe-session
+class OrderRequest(BaseModel):
+    product_id: int
+    quantity: int
 
 @router.post("/create-checkout-session")
-def create_checkout_session(data: CheckoutRequest):
+def create_checkout_session(data: OrderRequest, db: Session = Depends(get_db)):
+    product = db.query(Product).filter(Product.id == data.product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    order = Order(
+        stripe_session_id="placeholder",
+        total_amount=product.price * data.quantity,
+        status="pending"
+    )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    order_item = OrderItem(
+        order_id=order.id,
+        product_id=product.id,
+        quantity=data.quantity,
+        unit_price=product.price
+    )
+    db.add(order_item)
+    db.commit()
+
+    session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[{
+            "price_data": {
+                "currency": "usd",
+                "product_data": {"name": product.name},
+                "unit_amount": int(product.price * 100),
+            },
+            "quantity": data.quantity,
+        }],
+        mode="payment",
+        success_url="https://hobbyhosting.org/success",
+        cancel_url="https://hobbyhosting.org/cancel",
+        metadata={"order_id": str(order.id)}
+    )
+
+    order.stripe_session_id = session.id
+    db.commit()
+
+    return {"id": session.id}
+
+
+# 📬 Webhook från Stripe
+@router.post("/stripe/webhook")
+async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
     try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": data.currency,
-                    "product_data": {"name": data.product_name},
-                    "unit_amount": data.price,
-                },
-                "quantity": 1,
-            }],
-            mode="payment",
-            success_url="http://localhost:3000/success",
-            cancel_url="http://localhost:3000/cancel",
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, WEBHOOK_SECRET
         )
-        return {"id": session.id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400, detail="Invalid signature")
+
+    if event["type"] == "checkout.session.completed":
+        session = event["data"]["object"]
+        order_id = session.get("metadata", {}).get("order_id")
+
+        if order_id:
+            order = db.query(Order).filter(Order.id == int(order_id)).first()
+            if order:
+                order.status = "paid"
+                db.commit()
+                print(f"✅ Order {order.id} marked as paid.")
+            else:
+                print("❌ Order not found.")
+        else:
+            print("⚠️ Missing order_id in metadata.")
+
+    return {"status": "ok"}

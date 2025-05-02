@@ -8,6 +8,10 @@ import os
 import stripe
 from dotenv import load_dotenv
 
+from app.stripe_routes import router as stripe_router
+app.include_router(stripe_router)
+
+
 load_dotenv()
 
 app = FastAPI()
