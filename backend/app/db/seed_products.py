@@ -1,6 +1,9 @@
-from sqlalchemy.orm import Session
-from app.db.db import SessionLocal
-from app.models import Product
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from db.db import SessionLocal
+from models import Product
 
 def seed():
     db: Session = SessionLocal()
