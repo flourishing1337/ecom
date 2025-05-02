@@ -3,20 +3,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from pydantic import BaseModel
-from .models import Base, Product
-import os
-import stripe
 from dotenv import load_dotenv
+import stripe
+import os
 
+from app.models import Base, Product
 from app.stripe_routes import router as stripe_router
-app.include_router(stripe_router)
-
 
 load_dotenv()
 
 app = FastAPI()
+app.include_router(stripe_router)
 
-# Allow frontend in production
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://hobbyhosting.org", "http://localhost:3000"],
@@ -24,17 +23,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database setup
-DATABASE_URL = "postgresql://postgres:password@db:5432/postgres"
+# Database
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@db:5432/postgres")
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Stripe setup
+# Stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 class CheckoutRequest(BaseModel):
     product_name: str
-    price: int  # price in cents (e.g. 2000 = 20.00)
+    price_cents: int  # e.g., 2000 = $20.00
     currency: str = "usd"
 
 @app.on_event("startup")
@@ -49,19 +48,12 @@ def health():
 def get_products():
     db = SessionLocal()
     products = db.query(Product).all()
-    return [{"id": p.id, "name": p.name, "price": p.price} for p in products]
-
-@app.post("/seed")
-def seed_products():
-    db = SessionLocal()
-    sample_products = [
-        Product(name="Sample T-Shirt", price=19.99),
-        Product(name="Coffee Mug", price=9.99),
-        Product(name="Baseball Cap", price=14.99),
-    ]
-    db.add_all(sample_products)
-    db.commit()
-    return {"message": f"Added {len(sample_products)} products"}
+    return [{
+        "id": p.id,
+        "name": p.name,
+        "price": p.price_cents / 100,
+        "image_url": p.image_url
+    } for p in products]
 
 @app.post("/create-checkout-session")
 def create_checkout_session(data: CheckoutRequest):
@@ -72,7 +64,7 @@ def create_checkout_session(data: CheckoutRequest):
                 "price_data": {
                     "currency": data.currency,
                     "product_data": {"name": data.product_name},
-                    "unit_amount": data.price,
+                    "unit_amount": data.price_cents,
                 },
                 "quantity": 1,
             }],
